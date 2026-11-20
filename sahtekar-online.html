@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sahtekâr Kim?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f0ff;--ink:#1f1a3d;--mut:#6b6590;--card:#fff;--line:#d9d3f5;--grape:#5b3df5;--on:#fff;--lemon:#ffd84a;--pink:#ff5c8a;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15112e;--ink:#f1eeff;--mut:#a39ccf;--card:#221c47;--line:#3a3270;--grape:#8f7bff;--on:#15112e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15112e;--ink:#f1eeff;--mut:#a39ccf;--card:#221c47;--line:#3a3270;--grape:#8f7bff;--on:#15112e;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.4}
+main{max-width:480px;margin:0 auto;padding:20px 18px 40px}
+h1{font-size:34px;font-weight:800;line-height:1.05;margin:8px 0 6px}
+h2{font-size:26px;font-weight:800;line-height:1.1;margin:6px 0 14px}
+p{margin:0 0 14px;color:var(--mut)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+button{font:inherit;font-weight:700;cursor:pointer;border:0;border-radius:14px;padding:14px 18px;background:var(--grape);color:var(--on);width:100%}
+button:focus-visible,input:focus-visible{outline:3px solid var(--lemon);outline-offset:2px}
+button.alt{background:transparent;color:var(--ink);border:2px solid var(--line)}
+button:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.row input{flex:1;font:inherit;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--ink);min-width:0}
+.row button{width:auto}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px}
+.chip{background:var(--card);border:2px solid var(--line);border-radius:99px;padding:6px 8px 6px 14px;font-weight:700;display:flex;gap:8px;align-items:center}
+.chip b{cursor:pointer;color:var(--pink);font-size:20px;line-height:1}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.grid button{padding:16px 0;font-size:20px;background:var(--card);color:var(--ink);border:2px solid var(--line)}
+.grid button.on{background:var(--lemon);color:#1f1a3d;border-color:var(--lemon)}
+.pick{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.pick button{background:var(--card);color:var(--ink);border:2px solid var(--line);text-align:left}
+.pick button.on{background:var(--lemon);color:#1f1a3d;border-color:var(--lemon)}
+.big{font-size:52px;font-weight:800;text-align:center;margin:18px 0;color:var(--grape)}
+.q{font-size:24px;font-weight:800;margin:4px 0 16px}
+table{width:100%;border-collapse:collapse}
+td{padding:10px 4px;border-bottom:1px solid var(--line)}
+td:last-child{text-align:right;font-weight:800;font-size:22px}
+.tag{display:inline-block;background:var(--pink);color:#fff;border-radius:8px;padding:2px 8px;font-size:14px;font-weight:700;margin-left:6px}
+.gap{height:10px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+var WORDS=[["Elma","Armut"],["Kahve","Çay"],["Kedi","Köpek"],["Deniz","Göl"],["Otobüs","Tren"],["Pizza","Lahmacun"],["Futbol","Basketbol"],["Güneş","Ay"],["Sinema","Tiyatro"],["Bisiklet","Motosiklet"],["Çorba","Salata"],["Kış","Sonbahar"],["Kitap","Dergi"],["Dağ","Tepe"]];
+var QS=["Ne kadar büyük?","Ne kadar pahalı?","Ne kadar sık karşılaşırsın?","Ne kadar sağlıklı?","Ne kadar hoşuna gider?","Ne kadar eğlenceli?","Ne kadar ağır?","Ne kadar eski bir şey?","Ne kadar kalabalık bir şey?","Ne kadar sessiz bir şey?"];
+var MAXQ=3;
+var S={phase:"menu",room:null,code:"",host:false,peers:[],myName:"",cd:"",msg:"",players:[],i:0,sel:null,rev:false,imp:0,wa:"",wb:"",qs:[],ans:[],votes:[],res:null};
+if(/^#[a-z0-9]{3,8}$/.test(location.hash))S.cd=location.hash.slice(1);
+var $=function(s){return document.querySelector(s)};
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function go(p){S.phase=p;S.i=0;S.sel=null;S.rev=false;render()}
+function addP(){var el=$("#nm"),v=el.value.trim();if(!v||S.players.length>=10)return;S.players.push({name:v,score:0});render();$("#nm").focus()}
+function delP(k){S.players.splice(k,1);render()}
+function newRound(){
+  var p=WORDS[Math.floor(Math.random()*WORDS.length)].slice();
+  if(Math.random()<.5)p.reverse();
+  S.wa=p[0];S.wb=p[1];S.imp=Math.floor(Math.random()*S.players.length);
+  S.qs=[];S.ans=[];S.votes=[];S.res=null;nextQ();go("deal")
+}
+function nextQ(){
+  var pool=QS.filter(function(q){return S.qs.indexOf(q)<0});
+  S.qs.push(pool[Math.floor(Math.random()*pool.length)]);S.ans.push([]);
+}
+function word(k){return k===S.imp?S.wb:S.wa}
+function pickNext(store,done){
+  if(S.sel===null)return;
+  store[S.i]=S.sel;S.sel=null;S.i++;
+  if(S.i>=S.players.length){done()}else render()
+}
+function finishVote(){
+  var n=S.players.length,c=S.players.map(function(){return 0});
+  S.votes.forEach(function(v){c[v]++});
+  var max=Math.max.apply(null,c),top=c.filter(function(x){return x===max}).length;
+  var caught=c[S.imp]===max&&top===1,gain=S.players.map(function(){return 0});
+  S.votes.forEach(function(v,k){if(v===S.imp)gain[k]+=2});
+  if(!caught)gain[S.imp]+=3;
+  S.players.forEach(function(p,k){p.score+=gain[k]});
+  S.res={c:c,caught:caught,gain:gain};go("result")
+}
+function genCode(){var s="abcdefghjkmnpqrstuvwxyz23456789",c="";for(var i=0;i<5;i++)c+=s[Math.floor(Math.random()*s.length)];return c}
+function menuHtml(){
+  return '<h1>Sahtekâr kim?</h1><p>Nasıl oynamak istersin?</p><button onclick="go(\'setup\')">Aynı telefonda oyna</button><div class="gap"></div>'+
+  '<div class="card"><h2 style="font-size:20px">Online oda</h2><div class="row"><input id="mn" placeholder="Adın" maxlength="14" autocomplete="off" value="'+esc(S.myName)+'"></div><button onclick="createRoom()">Oda kur</button><div class="gap"></div>'+
+  '<div class="row"><input id="cd" placeholder="Oda kodu" maxlength="8" autocomplete="off" value="'+esc(S.cd)+'"><button onclick="joinRoom()">Katıl</button></div><p style="margin:0">'+esc(S.msg)+'</p></div>';
+}
+function lobbyHtml(){
+  var ps=S.peers.filter(function(p){return p.presence&&p.presence.name});
+  return '<p>Oda kodu</p><div class="big" style="margin:4px 0 12px;letter-spacing:.12em">'+esc(S.code)+'</div><p>Arkadaşların linkten ya da kodla katılsın.</p><button class="alt" onclick="shareLink()">Davet linkini paylaş</button><div class="gap"></div>'+
+  '<div class="card"><table>'+ps.map(function(p){return'<tr><td>'+esc(p.presence.name)+(p.isMe?'<span class="tag" style="background:var(--grape);color:var(--on)">sen</span>':"")+(p.presence.host?'<span class="tag">oda sahibi</span>':"")+'</td><td></td></tr>'}).join("")+'</table></div>'+
+  '<p>'+ps.length+' oyuncu odada.</p>'+(S.host?'<button '+(ps.length<3?"disabled":"")+' onclick="hostStart()">Oyunu başlat</button>'+(ps.length<3?'<p style="margin-top:10px">En az 3 oyuncu gerekir.</p>':""):'<p>Oda sahibi oyunu başlatacak.</p>')+'<button class="alt" onclick="leaveRoom()">Odadan çık</button>';
+}
+function createRoom(){var n=$("#mn").value.trim();if(!n){S.msg="Önce adını yaz.";render();return}enter(genCode(),n,true)}
+function joinRoom(){
+  var n=$("#mn").value.trim(),c=$("#cd").value.trim().toLowerCase();S.myName=n;S.cd=c;
+  if(!n){S.msg="Önce adını yaz.";render();return}
+  if(!/^[a-z0-9]{3,8}$/.test(c)){S.msg="Oda kodunu yaz.";render();return}
+  enter(c,n,false)
+}
+var ICE={config:{iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"turn:openrelay.metered.ca:80",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443",username:"openrelayproject",credential:"openrelayproject"}]}};
+function fail(m,pe){try{if(pe)pe.destroy()}catch(e){}S.room=null;S.peers=[];S.msg=m;go("menu")}
+function shareLink(){var u=location.href.split("#")[0]+"#"+S.code;if(navigator.share){navigator.share({title:"Sahtekâr kim?",text:"Odaya katıl: "+S.code,url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){alert("Link kopyalandı: "+u)},function(){})}}
+function enter(code,name,host,tries){
+  if(typeof Peer==="undefined"){S.msg="Bağlantı kütüphanesi yüklenemedi. İnternetini kontrol edip sayfayı yenile.";render();return}
+  S.myName=name;S.msg="Bağlanılıyor...";render();
+  var pe=new Peer(host?"sk-"+code:undefined,ICE),conns={},P={},me="",done=false;
+  function snap(){return Object.keys(P).map(function(l){return{peer:l,presence:P[l]}})}
+  function apply(list){
+    S.peers=list.map(function(x){return{peer:x.peer,presence:x.presence||{},isMe:x.peer===me}});
+    if(S.phase==="lobby"&&G())S.phase="game";
+    if(S.phase==="lobby"||S.phase==="game")prender()
+  }
+  function bcast(){var l=snap();Object.keys(conns).forEach(function(k){try{conns[k].send({t:"peers",list:l})}catch(e){}});apply(l)}
+  function merge(l,patch){var o={},old=P[l]||{},k;for(k in old)o[k]=old[k];for(k in patch){if(patch[k]===null)delete o[k];else o[k]=patch[k]}P[l]=o}
+  pe.on("error",function(e){
+    if(host&&e.type==="unavailable-id"&&(tries||0)<5){try{pe.destroy()}catch(x){}enter(genCode(),name,true,(tries||0)+1);return}
+    if(e.type==="peer-unavailable"){fail("Oda bulunamadı. Kodu kontrol et.",pe);return}
+    if(!done)fail("Bağlanılamadı ("+(e.type||"hata")+"). Tekrar dene.",pe)
+  });
+  pe.on("open",function(id){
+    me=id;
+    if(host){
+      P[me]={name:name,host:1};
+      pe.on("connection",function(c){
+        c.on("open",function(){conns[c.peer]=c;P[c.peer]=P[c.peer]||{};bcast()});
+        c.on("data",function(d){if(d&&d.t==="pres"&&d.patch&&typeof d.patch==="object"){merge(c.peer,d.patch);bcast()}});
+        c.on("close",function(){delete conns[c.peer];delete P[c.peer];bcast()});
+        c.on("error",function(){})
+      });
+      S.room={presence:function(patch){merge(me,patch);bcast();return Promise.resolve()},leave:function(){try{pe.destroy()}catch(e){}return Promise.resolve()}};
+      S.code=code;S.host=true;S.msg="";done=true;apply(snap());go("lobby")
+    }else{
+      var c=pe.connect("sk-"+code,{reliable:true});
+      var to=setTimeout(function(){if(!done)fail("Odaya bağlanılamadı. Kodu ve internetini kontrol et.",pe)},15000);
+      c.on("open",function(){
+        done=true;clearTimeout(to);
+        S.room={presence:function(patch){try{c.send({t:"pres",patch:patch})}catch(e){}return Promise.resolve()},leave:function(){try{pe.destroy()}catch(e){}return Promise.resolve()}};
+        S.code=code;S.host=false;S.msg="";S.peers=[];
+        c.send({t:"pres",patch:{name:name,host:0}});
+        go("lobby")
+      });
+      c.on("data",function(d){if(d&&d.t==="peers"&&Array.isArray(d.list))apply(d.list)});
+      c.on("close",function(){if(done){done=false;fail("Oda sahibiyle bağlantı koptu.",pe)}});
+      c.on("error",function(){})
+    }
+  })
+}
+function hash(n){n=Math.imul(n^(n>>>16),0x45d9f3b);n=Math.imul(n^(n>>>16),0x45d9f3b);return(n^(n>>>16))>>>0}
+function G(){for(var i=0;i<S.peers.length;i++){var p=S.peers[i].presence;if(p&&p.host&&p.g)return p.g}return null}
+function peerOf(l){for(var i=0;i<S.peers.length;i++)if(S.peers[i].peer===l)return S.peers[i];return null}
+function pr(l){var p=peerOf(l);return p?p.presence:{}}
+function meP(){for(var i=0;i<S.peers.length;i++)if(S.peers[i].isMe)return S.peers[i];return null}
+function prender(){S.keep=true;render();S.keep=false}
+function setG(o){var g=G()||{},n={},k;for(k in g)n[k]=g[k];for(k in o)n[k]=o[k];S.room.presence({g:n})}
+function sendQ(ak){var t=(S.qtxt||"").trim().slice(0,80);if(!t)return;S.room.presence({q:{k:ak,t:t,tg:S.qtg==null?-1:S.qtg}})}
+function suggestQ(){var g=G();S.qtxt=QS[g.qs[g.qn]];prender()}
+function hostGo(ph){setG({ph:ph})}
+function hostNextQ(){var g=G();setG({ph:"write",qn:g.qn+1})}
+function calc(g){
+  var n=g.pl.length,imp=hash(g.seed+7)%n,c=g.pl.map(function(){return 0});
+  var vs=g.pl.map(function(l){var p=pr(l);return(p.vk===g.r&&p.v!=null)?p.v:-1});
+  vs.forEach(function(v){if(v>=0&&v<n)c[v]++});
+  var max=Math.max.apply(null,c),top=c.filter(function(x){return x===max}).length;
+  var caught=max>0&&c[imp]===max&&top===1,gain=c.map(function(){return 0});
+  vs.forEach(function(v,k){if(v===imp)gain[k]+=2});
+  if(!caught)gain[imp]+=3;
+  return{imp:imp,c:c,caught:caught,gain:gain}
+}
+function hostStart(){
+  var old=G(),sc={},k;
+  if(old){var o=old.sc||{};for(k in o)sc[k]=o[k];
+    if(old.ph==="result"){var c=calc(old);old.pl.forEach(function(l,i){sc[l]=(sc[l]||0)+c.gain[i]})}}
+  var ps=S.peers.filter(function(p){return p.presence&&p.presence.name}).sort(function(a,b){return a.peer<b.peer?-1:1});
+  if(ps.length<3)return;
+  var idx=QS.map(function(q,i){return i}).sort(function(){return Math.random()-.5}).slice(0,MAXQ);
+  setG({r:(old?old.r:0)+1,seed:Math.floor(Math.random()*2000000000),ph:"deal",pl:ps.map(function(p){return p.peer}),nm:ps.map(function(p){return p.presence.name}),qs:idx,qn:0,sc:sc});
+}
+function gameHtml(){
+  var g=G(),leave='<div class="gap"></div><button class="alt" onclick="leaveRoom()">Odadan çık</button>';
+  if(!g)return'<h2>Oda sahibi bekleniyor</h2><p>Oyun henüz başlamadı ya da oda sahibi ayrıldı.</p>'+leave;
+  var m=meP(),n=g.pl.length,k=m?g.pl.indexOf(m.peer):-1;
+  if(k<0)return'<h2>Tur devam ediyor</h2><p>Oda sahibi yeni tur başlatınca otomatik dahil olursun.</p>'+leave;
+  var key=g.r+g.ph+g.qn;if(S.selKey!==key){S.selKey=key;S.sel=null;S.rev=false;S.qtxt="";S.qtg=-1}
+  var imp=hash(g.seed+7)%n,pair=WORDS[g.seed%WORDS.length],sw=hash(g.seed)&1,wa=pair[sw],wb=pair[1-sw],mw=k===imp?wb:wa;
+  var ak=g.r+"."+g.qn,mp=pr(m.peer),host=S.host,h="";
+  var ai=(g.r+g.qn)%n,qq=pr(g.pl[ai]).q,qt=(qq&&qq.k===ak)?qq:null,qText=qt?String(qt.t):QS[g.qs[g.qn]],tg=(qt&&qt.tg>=0&&qt.tg<n)?qt.tg:-1;
+  function cnt(f){var c=0;g.pl.forEach(function(l){if(f(pr(l)))c++});return c}
+  function nm(i){return esc(g.nm[i])}
+  function hb(label,en,fn){return host?'<button '+(en?"":"disabled")+' onclick="'+fn+'">'+label+'</button>':'<p>Oda sahibi devam ettirecek.</p>'}
+  if(g.ph==="deal"){
+    var rd=cnt(function(p){return p.rd===g.r});
+    h='<p>Tur '+g.r+'</p>';
+    if(mp.rd!==g.r){
+      h+=!S.rev?'<h2>Kelimeni gör</h2><p>Ekranı kimse görmesin.</p><button onclick="S.rev=true;prender()">Kelimemi göster</button>'
+      :'<h2>Kelimen</h2><div class="card"><div class="big">'+esc(mw)+'</div></div><button onclick="S.rev=false;S.room.presence({rd:'+g.r+'});prender()">Gizle, hazırım</button>';
+    }else h+='<h2>Hazırsın</h2><p>Diğerleri bekleniyor.</p>';
+    h+='<p>'+rd+' / '+n+' hazır</p>'+hb('Soruya geç',rd===n,"hostGo('write')");
+  }else if(g.ph==="write"){
+    var wr=qt!==null;
+    h='<p>Soru '+(g.qn+1)+' / '+g.qs.length+'</p>';
+    if(k===ai){
+      if(!wr){
+        h+='<h2>Sorunu yaz</h2><p>Cevabı 1-10 puan olacak şekilde sor. Örnek: Ne kadar büyük?</p><div class="row"><input id="qt" maxlength="80" placeholder="Ne kadar ...?" value="'+esc(S.qtxt||"")+'" oninput="S.qtxt=this.value"></div>'+
+        '<p style="margin-bottom:6px">Hedef (isteğe bağlı)</p><div class="pick"><button class="'+(S.qtg<0?"on":"")+'" onclick="S.qtg=-1;prender()">Hedef yok</button>'+
+        g.pl.map(function(l,i){return i===k?"":'<button class="'+(S.qtg===i?"on":"")+'" onclick="S.qtg='+i+';prender()">'+nm(i)+'</button>'}).join("")+'</div>'+
+        '<button class="alt" onclick="suggestQ()">Hazır soru koy</button><div class="gap"></div><button onclick="sendQ(\''+ak+'\')">Soruyu gönder</button>';
+      }else h+='<h2>Sorun gönderildi</h2><p>Oda sahibi başlatınca herkese açılacak.</p>';
+    }else h+='<h2>'+nm(ai)+' soru yazıyor</h2><p>Biraz bekle.</p>';
+    h+=host?(wr?'<div class="gap"></div><button onclick="hostGo(\'ask\')">Soruyu göster</button>':'<div class="gap"></div><button class="alt" onclick="hostGo(\'ask\')">Hazır soruyla geç</button>'):'';
+  }else if(g.ph==="ask"){
+    var da=cnt(function(p){return p.ak===ak});
+    h='<p>Soru '+(g.qn+1)+' / '+g.qs.length+'</p><div class="q">'+esc(qText)+'</div><p>Soran: '+nm(ai)+(tg>=0?', hedef: '+nm(tg):"")+'</p>';
+    if(mp.ak!==ak){
+      h+='<h2>Puanın?</h2><p>1 en az, 10 en çok. Kendi kelimene göre seç.</p><div class="grid">'+
+      [1,2,3,4,5,6,7,8,9,10].map(function(x){return'<button class="'+(S.sel===x?"on":"")+'" onclick="S.sel='+x+';prender()">'+x+'</button>'}).join("")+'</div>'+
+      '<button '+(S.sel===null?"disabled":"")+' onclick="S.room.presence({a:S.sel,ak:\''+ak+'\'});prender()">Onayla</button>';
+    }else h+='<h2>Cevabın alındı</h2><p>Puanlar herkes cevaplayınca açılacak.</p>';
+    h+='<p>'+da+' / '+n+' cevapladı</p>'+hb('Puanları aç',da===n,"hostGo('show')");
+  }else if(g.ph==="show"){
+    var more=g.qn+1<g.qs.length;
+    h='<h2>Puanlar açıldı</h2><div class="q">'+esc(qText)+'</div><div class="card"><table>'+
+    g.pl.map(function(l,i){var p=pr(l);return'<tr><td>'+nm(i)+(i===tg?'<span class="tag">hedef</span>':"")+'</td><td>'+(p.ak===ak?esc(p.a):"-")+'</td></tr>'}).join("")+'</table></div><p>Kimin puanı diğerlerinden ayrışıyor?</p>'+
+    (host?(more?'<button onclick="hostNextQ()">Yeni soru</button><div class="gap"></div>':"")+'<button class="'+(more?"alt":"")+'" onclick="hostGo(\'vote\')">Oylamaya geç</button>':'<p>Oda sahibi devam ettirecek.</p>');
+  }else if(g.ph==="vote"){
+    var dv=cnt(function(p){return p.vk===g.r&&p.v!=null});
+    if(mp.vk!==g.r){
+      h='<h2>Sahtekâr kim?</h2><p>Gizli oy. Kendini de seçebilirsin.</p><div class="pick">'+
+      g.pl.map(function(l,i){return'<button class="'+(S.sel===i?"on":"")+'" onclick="S.sel='+i+';prender()">'+nm(i)+(i===k?" (sen)":"")+'</button>'}).join("")+'</div>'+
+      '<button '+(S.sel===null?"disabled":"")+' onclick="S.room.presence({v:S.sel,vk:'+g.r+'});prender()">Oyu onayla</button>';
+    }else h='<h2>Oy kaydedildi</h2><p>Diğerleri bekleniyor.</p>';
+    h+='<p>'+dv+' / '+n+' oy verdi</p>'+hb('Sonucu aç',dv===n,"hostGo('result')");
+  }else{
+    var r=calc(g),tot=g.pl.map(function(l,i){return((g.sc&&g.sc[l])||0)+r.gain[i]});
+    var order=tot.map(function(x,i){return i}).sort(function(a,b){return tot[b]-tot[a]});
+    h='<h2>'+(r.caught?"Sahtekâr yakalandı!":"Sahtekâr kaçtı!")+'</h2><div class="card"><p style="margin:0">Sahtekâr: <b style="color:var(--ink)">'+nm(imp)+'</b><br>Herkes: <b style="color:var(--ink)">'+esc(wa)+'</b> / Sahtekâr: <b style="color:var(--ink)">'+esc(wb)+'</b></p></div>'+
+    '<div class="card"><table>'+g.pl.map(function(l,i){return'<tr><td>'+nm(i)+(i===imp?'<span class="tag">sahtekâr</span>':"")+'<br><span style="color:var(--mut);font-size:14px">'+r.c[i]+' oy, bu tur +'+r.gain[i]+'</span></td><td></td></tr>'}).join("")+'</table></div>'+
+    '<h2>Sıralama</h2><div class="card"><table>'+order.map(function(i,x){return'<tr><td>'+(x+1)+'. '+nm(i)+'</td><td>'+tot[i]+'</td></tr>'}).join("")+'</table></div>'+
+    (host?'<button onclick="hostStart()">Yeni tur</button>':'<p>Oda sahibi yeni turu başlatacak.</p>')+leave;
+  }
+  return h;
+}
+function leaveRoom(){if(S.room)S.room.leave();S.room=null;S.peers=[];go("menu")}
+function render(){
+  var a=$("#app"),P=S.players,h="",cur=P[S.i];
+  if(S.phase==="menu"){h=menuHtml()}else if(S.phase==="lobby"){h=lobbyHtml()}else if(S.phase==="game"){h=gameHtml()}else if(S.phase==="setup"){
+    h='<h1>Sahtekâr kim?</h1><p>Herkes aynı kelimeyi alır, biri benzer ama farklı bir kelime. Kimse rolünü bilmez. Puanlı sorulara verilen cevaplar farkı ele verir.</p>'+
+    '<div class="row"><input id="nm" placeholder="Oyuncu adı" maxlength="14" autocomplete="off"><button onclick="addP()">Ekle</button></div>'+
+    '<div class="chips">'+P.map(function(p,k){return'<span class="chip">'+esc(p.name)+'<b onclick="delP('+k+')" aria-label="Sil">×</b></span>'}).join("")+'</div>'+
+    '<button '+(P.length<3?"disabled":"")+' onclick="newRound()">Başla ('+P.length+' oyuncu)</button>'+(P.length<3?'<p style="margin-top:10px">En az 3 oyuncu gerekir.</p>':"");
+  }else if(S.phase==="deal"){
+    if(!S.rev){h='<h2>Telefonu '+esc(cur.name)+' alsın</h2><p>Kelimeni sadece sen gör. Hazır olunca aç.</p><button onclick="S.rev=true;render()">Kelimemi göster</button>'}
+    else{h='<h2>'+esc(cur.name)+', kelimen</h2><div class="card"><div class="big">'+esc(word(S.i))+'</div></div><p>Kelimeyi aklında tut, sonra gizle.</p><button onclick="S.rev=false;S.i++;S.i>=S.players.length?go(\'ask\'):render()">Gizle ve ilerle</button>'}
+  }else if(S.phase==="ask"){
+    var qi=S.qs.length-1;
+    h='<p>Soru '+(qi+1)+' / '+MAXQ+'</p><div class="q">'+esc(S.qs[qi])+'</div><h2>'+esc(cur.name)+', puanın?</h2><p>1 en az, 10 en çok. Kendi kelimene göre seç.</p><div class="grid">'+
+    [1,2,3,4,5,6,7,8,9,10].map(function(n){return'<button class="'+(S.sel===n?"on":"")+'" onclick="S.sel='+n+';render()">'+n+'</button>'}).join("")+'</div>'+
+    '<button '+(S.sel===null?"disabled":"")+' onclick="pickNext(S.ans[S.ans.length-1],function(){go(\'show\')})">Onayla ve gizle</button>';
+  }else if(S.phase==="show"){
+    var qi2=S.qs.length-1;
+    h='<h2>Puanlar açıldı</h2><div class="q">'+esc(S.qs[qi2])+'</div><div class="card"><table>'+P.map(function(p,k){return'<tr><td>'+esc(p.name)+'</td><td>'+S.ans[qi2][k]+'</td></tr>'}).join("")+'</table></div><p>Kimin puanı diğerlerinden ayrışıyor?</p>'+
+    (S.qs.length<MAXQ?'<button onclick="nextQ();go(\'ask\')">Yeni soru</button><div class="gap"></div>':"")+'<button class="'+(S.qs.length<MAXQ?"alt":"")+'" onclick="go(\'vote\')">Oylamaya geç</button>';
+  }else if(S.phase==="vote"){
+    h='<h2>'+esc(cur.name)+', sahtekâr kim?</h2><p>Gizli oy. Kendini de seçebilirsin.</p><div class="pick">'+
+    P.map(function(p,k){return'<button class="'+(S.sel===k?"on":"")+'" onclick="S.sel='+k+';render()">'+esc(p.name)+'</button>'}).join("")+'</div>'+
+    '<button '+(S.sel===null?"disabled":"")+' onclick="pickNext(S.votes,finishVote)">Oyu onayla</button>';
+  }else{
+    var r=S.res,order=P.map(function(p,k){return k}).sort(function(x,y){return P[y].score-P[x].score});
+    h='<h2>'+(r.caught?"Sahtekâr yakalandı!":"Sahtekâr kaçtı!")+'</h2><div class="card"><p style="margin:0">Sahtekâr: <b style="color:var(--ink)">'+esc(P[S.imp].name)+'</b><br>Herkes: <b style="color:var(--ink)">'+esc(S.wa)+'</b> / Sahtekâr: <b style="color:var(--ink)">'+esc(S.wb)+'</b></p></div>'+
+    '<div class="card"><table>'+P.map(function(p,k){return'<tr><td>'+esc(p.name)+(k===S.imp?'<span class="tag">sahtekâr</span>':"")+'<br><span style="color:var(--mut);font-size:14px">'+r.c[k]+' oy, bu tur +'+r.gain[k]+'</span></td><td></td></tr>'}).join("")+'</table></div>'+
+    '<h2>Sıralama</h2><div class="card"><table>'+order.map(function(k,n){return'<tr><td>'+(n+1)+'. '+esc(P[k].name)+'</td><td>'+P[k].score+'</td></tr>'}).join("")+'</table></div>'+
+    '<button onclick="newRound()">Yeni tur</button><div class="gap"></div><button class="alt" onclick="S.players.forEach(function(p){p.score=0});go(\'setup\')">Oyuncuları değiştir</button>';
+  }
+  a.innerHTML=h;
+  if(!S.keep)window.scrollTo(0,0);
+  var nm=$("#nm");if(nm)nm.onkeydown=function(e){if(e.key==="Enter")addP()}
+}
+render();
+</script>
+</body>
+</html>
